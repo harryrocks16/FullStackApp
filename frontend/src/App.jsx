@@ -1,30 +1,43 @@
-
-// App.jsx - Mock React frontend (with issues)
 import React, { useState, useEffect } from 'react';
+import FeedbackList from './components/FeedbackList';
+import RatingFilter from './components/RatingFilter';
+import FeedbackForm from './components/FeedbackForm';
+import './index.css';
 
 function App() {
   const [feedback, setFeedback] = useState([]);
-  const [rating, setRating] = useState(null);
+  const [rating, setRating] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch(`/feedback?rating=${rating}`)
-      .then(res => res.json())
-      .then(data => setFeedback(data));
+    const fetchFeedback = async () => {
+      setLoading(true);
+      const url = rating ? `/feedback?rating=${rating}` : '/feedback';
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        setFeedback(data);
+        setError(null);
+      } catch (err) {
+        setError('Error fetching feedback');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeedback();
   }, [rating]);
 
   return (
     <div>
       <h1>Feedback Dashboard</h1>
-      <select onChange={(e) => setRating(e.target.value)}>
-        <option value="">All Ratings</option>
-        <option value="5">5 Stars</option>
-        <option value="1">1 Star</option>
-      </select>
-      <ul>
-        {feedback.map((f, i) => (
-          <li key={i}>{f.message} - {f.rating} stars</li>
-        ))}
-      </ul>
+      <RatingFilter rating={rating} setRating={setRating} />
+      {loading && <p>Loading...</p>}
+      {error && <p>{error}</p>}
+      <FeedbackList feedback={feedback} />
+      <FeedbackForm onFeedbackSubmit={() => setRating(r => r)} />
     </div>
   );
 }

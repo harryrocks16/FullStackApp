@@ -1,19 +1,17 @@
 import React, { useState } from 'react';
 
 function FeedbackForm({ onFeedbackSubmit }) {
-  // State to manage the feedback message
   const [message, setMessage] = useState('');
-  // State to manage the feedback rating
   const [rating, setRating] = useState('5');
-  // State to manage the submission status (success or error)
   const [status, setStatus] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Function to handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default form submission behavior
+    e.preventDefault();
+    setSubmitting(true);
+    setStatus(null);
 
     try {
-      // Send feedback data to the backend
       const res = await fetch('/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -23,43 +21,47 @@ function FeedbackForm({ onFeedbackSubmit }) {
       const data = await res.json();
 
       if (res.ok) {
-        // If submission is successful, update the status and reset the form
-        setStatus('Feedback submitted!');
         setMessage('');
         setRating('5');
-        onFeedbackSubmit(); // Trigger a refresh in the parent component
+        setStatus('✅ Feedback submitted!');
+        onFeedbackSubmit();
       } else {
-        // If submission fails, display the error message
-        setStatus(data.error || 'Submission failed');
+        setStatus(data.error || '❌ Submission failed');
       }
     } catch (error) {
-      // Handle network or other unexpected errors
-      setStatus('An error occurred. Please try again.');
+      setStatus('⚠️ An error occurred. Please try again.');
+    } finally {
+      setSubmitting(false);
+      // Auto-clear status after 5 seconds
+      setTimeout(() => setStatus(null), 5000);
     }
   };
 
   return (
     <form onSubmit={handleSubmit}>
       <h2>Leave Feedback</h2>
-      {/* Input field for the feedback message */}
       <input
         type="text"
         placeholder="Your message"
         value={message}
         required
         onChange={(e) => setMessage(e.target.value)}
+        disabled={submitting}
       />
-      {/* Dropdown to select the feedback rating */}
-      <select value={rating} onChange={(e) => setRating(e.target.value)}>
+      <select
+        value={rating}
+        onChange={(e) => setRating(e.target.value)}
+        disabled={submitting}
+      >
         {[5, 4, 3, 2, 1].map((r) => (
           <option key={r} value={r}>
             {r} Star{r > 1 ? 's' : ''}
           </option>
         ))}
       </select>
-      {/* Submit button */}
-      <button type="submit">Submit</button>
-      {/* Display the submission status */}
+      <button type="submit" disabled={submitting}>
+        {submitting ? 'Submitting...' : 'Submit'}
+      </button>
       {status && <p>{status}</p>}
     </form>
   );

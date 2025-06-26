@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import FeedbackList from './components/FeedbackList';
 import RatingFilter from './components/RatingFilter';
 import FeedbackForm from './components/FeedbackForm';
@@ -10,25 +10,25 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchFeedback = async () => {
-      setLoading(true);
-      const url = rating ? `/feedback?rating=${rating}` : '/feedback';
+  const fetchFeedback = useCallback(async () => {
+    setLoading(true);
+    const url = rating ? `/feedback?rating=${rating}` : '/feedback';
 
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        setFeedback(data);
-        setError(null);
-      } catch (err) {
-        setError('Error fetching feedback');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchFeedback();
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      setFeedback(data);
+      setError(null);
+    } catch (err) {
+      setError('Error fetching feedback');
+    } finally {
+      setLoading(false);
+    }
   }, [rating]);
+
+  useEffect(() => {
+    fetchFeedback();
+  }, [fetchFeedback]);
 
   return (
     <div>
@@ -36,8 +36,10 @@ function App() {
       <RatingFilter rating={rating} setRating={setRating} />
       {loading && <p>Loading...</p>}
       {error && <p>{error}</p>}
+      {/* FeedbackList now assumes data is already trimmed in parent or by backend */}
       <FeedbackList feedback={feedback} />
-      <FeedbackForm onFeedbackSubmit={() => setRating(r => r)} />
+      {/* Refresh list immediately after successful submission */}
+      <FeedbackForm onFeedbackSubmit={fetchFeedback} />
     </div>
   );
 }
